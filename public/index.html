@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Overview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc',
+                            400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+                            800: '#075985', 900: '#0c4a6e', 950: '#082f49',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code, .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Navigation active states */
+        .nav-link[aria-current="page"] {
+            background-color: rgb(14 165 233 / 0.1);
+            color: rgb(14 165 233);
+            border-left-color: rgb(14 165 233);
+        }
+        .nav-link:hover:not([aria-current="page"]) { background-color: rgb(241 245 249); }
+        .dark .nav-link:hover:not([aria-current="page"]) { background-color: rgb(30 41 59); }
+
+        /* Tab styling */
+        .tab-panel.hidden { display: none; }
+
+        /* Details/Summary styling */
+        details summary { cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::marker { display: none; }
+        details[open] .chevron { transform: rotate(90deg); }
+        .chevron { transition: transform 0.2s ease; }
+
+        /* Smooth transitions */
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Card hover effects */
+        .card { transition: border-color 0.2s, box-shadow 0.2s; }
+        .card:hover { border-color: rgb(125 211 252); box-shadow: 0 10px 15px -3px rgb(14 165 233 / 0.1); }
+        .dark .card:hover { border-color: rgb(7 89 133); }
+
+        /* Theme toggle */
+        .theme-btn[aria-pressed="true"] { background-color: white; color: rgb(14 165 233); box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); }
+        .dark .theme-btn[aria-pressed="true"] { background-color: rgb(51 65 85); color: rgb(56 189 248); }
+
+        /* Loading state */
+        .loading { display: flex; align-items: center; justify-content: center; min-height: 50vh; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgb(226 232 240); border-top-color: rgb(14 165 233); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Hide elements */
+        [hidden] { display: none !important; }
+
+        /* Print styles */
+        @media print { aside, header { display: none; } main { margin-left: 0; } }
+    </style>
+</head>
+<body class="min-h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="fixed inset-y-0 left-0 z-10 w-72 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto">
+            <div class="sticky top-0 z-10 bg-white dark:bg-slate-900 px-6 py-5">
+                <a href="#" class="flex items-center gap-3" data-nav="overview">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/30">
+                        <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="9" cy="9" r="7"/>
+                            <circle cx="15" cy="15" r="7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <span id="project-name" class="text-lg font-semibold">Loading...</span>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Architecture Overview</p>
+                    </div>
+                </a>
+            </div>
+            <nav class="px-4 py-6" id="nav"></nav>
+        </aside>
+
+        <!-- Main -->
+        <main class="flex-1 ml-72">
+            <header class="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
+                <div class="flex items-center justify-between px-8 py-4">
+                    <nav id="breadcrumb" class="flex items-center gap-2 text-sm" aria-label="Breadcrumb"></nav>
+                    <div class="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg" id="theme-toggle">
+                        <button data-theme="light" title="Light" class="theme-btn p-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+                            </svg>
+                        </button>
+                        <button data-theme="system" title="System" class="theme-btn p-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"/>
+                            </svg>
+                        </button>
+                        <button data-theme="dark" title="Dark" class="theme-btn p-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            <div id="content" class="px-8 py-8 max-w-5xl">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Templates -->
+    <template id="tpl-overview">
+        <div class="fade-in">
+            <header class="mb-12">
+                <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">Architecture Overview</h1>
+                <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-3xl">
+                    Explore the domain-driven architecture of <strong class="text-primary-600 dark:text-primary-400" data-project></strong>.
+                    Navigate through bounded contexts, modules, commands, queries, and domain events.
+                </p>
+                <p class="mt-2 text-sm text-slate-500" data-generated></p>
+            </header>
+            <section class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12" data-stats></section>
+            <section>
+                <h2 class="text-xl font-semibold mb-6">Bounded Contexts</h2>
+                <div class="grid md:grid-cols-2 gap-6" data-contexts></div>
+            </section>
+        </div>
+    </template>
+
+    <template id="tpl-module">
+        <div class="fade-in">
+            <header class="flex items-center gap-3 mb-10">
+                <h1 class="text-3xl font-bold" data-module></h1>
+                <span class="text-sm font-medium px-2.5 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" data-context></span>
+            </header>
+            <div data-sections></div>
+        </div>
+    </template>
+
+    
+    <script>
+    (function() {
+        // State
+        let data = null;
+        const $ = (s, c = document) => c.querySelector(s);
+        const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+        const h = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+
+        // Theme handling (light/dark/system)
+        const applyTheme = (theme, reinitGraphs = false) => {
+            const isDark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme:dark)').matches);
+            document.documentElement.classList.toggle('dark', isDark);
+            $$('.theme-btn').forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.theme === theme));
+            if (reinitGraphs) {
+                if (typeof initExternalCallGraphs === 'function') initExternalCallGraphs(true);
+                if (typeof initSubscriberGraphs === 'function') initSubscriberGraphs(true);
+            }
+        };
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        applyTheme(savedTheme);
+        matchMedia('(prefers-color-scheme:dark)').onchange = () => { if (localStorage.getItem('theme') === 'system') applyTheme('system', true); };
+        $('#theme-toggle').onclick = e => {
+            const btn = e.target.closest('[data-theme]');
+            if (btn) { localStorage.setItem('theme', btn.dataset.theme); applyTheme(btn.dataset.theme, true); }
+        };
+
+        // Load data
+        fetch('arch.json').then(r => r.json()).then(json => { data = json; init(); }).catch(() => {
+            $('#content').innerHTML = '<p class="text-red-500">Failed to load architecture data. Make sure arch.json exists.</p>';
+        });
+
+        function init() {
+            $('#project-name').textContent = data.meta.project;
+            document.title = `${data.meta.project} - Architecture`;
+            renderNav();
+            navigate('overview');
+            document.body.onclick = e => {
+                const link = e.target.closest('[data-nav]');
+                if (link) { e.preventDefault(); navigate(link.dataset.nav); }
+            };
+        }
+
+        function navigate(view) {
+            const [type, ctx, mod, tab] = view.split(':');
+            const baseView = tab ? `${type}:${ctx}:${mod}` : view;
+            $$('[data-nav]').forEach(el => el.setAttribute('aria-current', el.dataset.nav === baseView ? 'page' : ''));
+            if (type === 'overview') renderOverview();
+            else if (type === 'module') renderModule(ctx, mod, tab);
+            updateBreadcrumb(baseView);
+        }
+
+        function findEventLocation(eventClass) {
+            for (const ctx of data.contexts) {
+                for (const mod of ctx.modules) {
+                    if (mod.domainEvents?.some(e => e.class === eventClass)) {
+                        return { context: ctx.name, module: mod.name };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function findCallDescription(targetClass, callType) {
+            const key = callType === 'query' ? 'queries' : 'commands';
+            for (const ctx of data.contexts) {
+                for (const mod of ctx.modules) {
+                    const item = mod[key]?.find(c => c.class === targetClass);
+                    if (item?.description) return item.description;
+                }
+            }
+            return null;
+        }
+
+        function updateBreadcrumb(view) {
+            const bc = $('#breadcrumb');
+            const [type, ctx, mod] = view.split(':');
+            if (type === 'overview') bc.innerHTML = '<span class="font-medium">Overview</span>';
+            else bc.innerHTML = `<span class="text-slate-500">${h(ctx)}</span><svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg><span class="font-medium">${h(mod)}</span>`;
+        }
+
+        function renderNav() {
+            const nav = $('#nav');
+            nav.innerHTML = `
+                <div class="mb-6">
+                    <a href="#" data-nav="overview" aria-current="page" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg border-transparent">
+                        <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+                        Overview
+                    </a>
+                </div>
+                ${data.contexts.map(ctx => `
+                    <div class="mb-4">
+                        <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">${h(ctx.name)}</h3>
+                        <ul class="space-y-1">
+                            ${ctx.modules.map(mod => `
+                                <li><a href="#" data-nav="module:${h(ctx.name)}:${h(mod.name)}" class="nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg border-transparent">
+                                    <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"/></svg>
+                                    ${h(mod.name)}
+                                </a></li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function renderOverview() {
+            const tpl = $('#tpl-overview').content.cloneNode(true);
+            const stats = { Contexts: data.contexts.length, Modules: 0, Commands: 0, Queries: 0, Events: 0 };
+            const colors = { Contexts: 'primary', Modules: 'primary', Commands: 'emerald', Queries: 'violet', Events: 'amber' };
+
+            data.contexts.forEach(ctx => ctx.modules.forEach(mod => {
+                stats.Modules++;
+                stats.Commands += mod.commands?.length || 0;
+                stats.Queries += mod.queries?.length || 0;
+                stats.Events += mod.domainEvents?.length || 0;
+            }));
+
+            $('[data-project]', tpl).textContent = data.meta.project;
+            $('[data-generated]', tpl).textContent = `Generated at ${new Date(data.meta.generatedAt).toLocaleString()}`;
+            $('[data-stats]', tpl).innerHTML = Object.entries(stats).map(([k, v]) => `
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div class="text-3xl font-bold text-${colors[k]}-600 dark:text-${colors[k]}-400">${v}</div>
+                    <div class="text-sm text-slate-600 dark:text-slate-400">${k}</div>
+                </div>
+            `).join('');
+
+            $('[data-contexts]', tpl).innerHTML = data.contexts.map(ctx => `
+                <article class="card bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                    <header class="flex items-start justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>
+                            </div>
+                            <h3 class="text-lg font-semibold">${h(ctx.name)}</h3>
+                        </div>
+                        <span class="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">${ctx.modules.length} module${ctx.modules.length !== 1 ? 's' : ''}</span>
+                    </header>
+                    <ul class="space-y-2">
+                        ${ctx.modules.map(mod => `
+                            <li><a href="#" data-nav="module:${h(ctx.name)}:${h(mod.name)}" class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                                ${h(mod.name)}
+                                <span class="ml-auto text-xs text-slate-400">${(mod.commands?.length || 0) + (mod.queries?.length || 0)} ops</span>
+                            </a></li>
+                        `).join('')}
+                    </ul>
+                </article>
+            `).join('');
+
+            $('#content').replaceChildren(tpl);
+        }
+
+        function renderModule(ctxName, modName, initialTab) {
+            const ctx = data.contexts.find(c => c.name === ctxName);
+            const mod = ctx?.modules.find(m => m.name === modName);
+            if (!mod) return;
+
+            const tpl = $('#tpl-module').content.cloneNode(true);
+            $('[data-context]', tpl).textContent = ctxName;
+            $('[data-module]', tpl).textContent = modName;
+
+            const sectionConfig = [
+                { key: 'commands', title: 'Commands', color: 'emerald', icon: 'M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5' },
+                { key: 'queries', title: 'Queries', color: 'violet', icon: 'M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z' },
+                { key: 'domainEvents', title: 'Domain Events', color: 'amber', icon: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0' },
+                { key: 'eventSubscribers', title: 'Subscribers', color: 'rose', icon: 'M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' },
+                { key: 'externalCalls', title: 'External Calls', color: 'cyan', icon: 'M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25' }
+            ];
+
+            // Filter to only sections with items
+            const availableSections = sectionConfig.filter(({ key }) => mod[key]?.length > 0);
+            if (availableSections.length === 0) {
+                $('[data-sections]', tpl).innerHTML = '<p class="text-slate-500">No elements in this module.</p>';
+                $('#content').replaceChildren(tpl);
+                return;
+            }
+
+            // Determine active tab index
+            const activeIdx = initialTab ? Math.max(0, availableSections.findIndex(s => s.key === initialTab)) : 0;
+
+            // Build tabs navigation
+            const tabs = availableSections.map(({ key, title, color, icon }, i) => {
+                const count = mod[key].length;
+                const isActive = i === activeIdx;
+                return `
+                    <button type="button" data-tab="${key}" class="tab-btn flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all ${isActive ? 'bg-white dark:bg-slate-700 text-primary-700 dark:text-primary-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/50'}">
+                        <svg class="h-4 w-4 text-${color}-600 dark:text-${color}-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="${icon}"/></svg>
+                        ${title} <span class="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300">${count}</span>
+                    </button>
+                `;
+            }).join('');
+
+            // Build tab panels
+            const panels = availableSections.map(({ key, color }, i) => {
+                const items = mod[key];
+                const isActive = i === activeIdx;
+                const renderFn = key === 'externalCalls'
+                    ? (item, idx) => renderExternalCall(item, color, modName, idx)
+                    : key === 'eventSubscribers'
+                    ? (item, idx) => renderSubscriber(item, color, ctxName, modName, idx)
+                    : item => renderItem(item, key, color);
+                return `
+                    <div data-panel="${key}" class="tab-panel ${isActive ? '' : 'hidden'} grid grid-cols-1 md:grid-cols-2 gap-4 fade-in">
+                        ${items.map((item, idx) => renderFn(item, idx)).join('')}
+                    </div>
+                `;
+            }).join('');
+
+            $('[data-sections]', tpl).innerHTML = `
+                <nav class="flex flex-wrap gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit mb-6">${tabs}</nav>
+                <div class="tab-content">${panels}</div>
+            `;
+
+            $('#content').replaceChildren(tpl);
+
+            // Tab switching
+            $$('.tab-btn', $('#content')).forEach(btn => {
+                btn.onclick = () => {
+                    const tabKey = btn.dataset.tab;
+                    $$('.tab-btn', $('#content')).forEach(b => {
+                        const isActive = b.dataset.tab === tabKey;
+                        b.classList.toggle('bg-white', isActive);
+                        b.classList.toggle('dark:bg-slate-700', isActive);
+                        b.classList.toggle('text-primary-700', isActive);
+                        b.classList.toggle('dark:text-primary-300', isActive);
+                        b.classList.toggle('shadow-sm', isActive);
+                        b.classList.toggle('text-slate-600', !isActive);
+                        b.classList.toggle('dark:text-slate-400', !isActive);
+                        b.classList.toggle('hover:bg-slate-200/70', !isActive);
+                        b.classList.toggle('dark:hover:bg-slate-700/50', !isActive);
+                    });
+                    $$('.tab-panel', $('#content')).forEach(p => {
+                        p.classList.toggle('hidden', p.dataset.panel !== tabKey);
+                    });
+                    // Re-init graphs when switching tabs
+                    if (tabKey === 'externalCalls') initExternalCallGraphs();
+                    if (tabKey === 'eventSubscribers') initSubscriberGraphs();
+                };
+            });
+
+            // Initialize graphs
+            initExternalCallGraphs();
+            initSubscriberGraphs();
+        }
+
+        function renderExternalCall(item, color, moduleName, index) {
+            const canvasId = `ext-call-${index}-${Date.now()}`;
+            const description = findCallDescription(item.targetClass, item.type);
+            const badgeColor = item.type === 'command' ? 'emerald' : 'violet';
+            return `
+                <article class="rounded-lg border border-${color}-200 dark:border-${color}-800 bg-${color}-50/50 dark:bg-${color}-900/10 p-4">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 class="text-base font-semibold cursor-help border-b border-dashed border-slate-400 dark:border-slate-600" title="${h(item.sourceClass)}">${h(item.source)}</h3>
+                        <span class="text-xs font-medium px-1.5 py-0.5 rounded-full bg-${color}-100 dark:bg-${color}-900/50 text-${color}-700 dark:text-${color}-300">calls</span>
+                        <span class="text-base font-semibold cursor-help border-b border-dashed border-slate-400 dark:border-slate-600" title="${h(item.targetClass)}">${h(item.name)}</span>
+                        <span class="text-xs font-medium px-1.5 py-0.5 rounded-full bg-${badgeColor}-100 dark:bg-${badgeColor}-900/50 text-${badgeColor}-700 dark:text-${badgeColor}-300">${h(item.type)}</span>
+                    </div>
+                    ${description ? `<p class="text-sm text-slate-600 dark:text-slate-400 mb-3">${h(description)}</p>` : ''}
+                    <div class="external-call-graph flex justify-center"
+                         data-canvas-id="${canvasId}"
+                         data-source-module="${h(moduleName)}"
+                         data-source-class="${h(item.source)}"
+                         data-target-context="${h(item.targetContext)}"
+                         data-target-module="${h(item.targetModule)}"
+                         data-call-type="${h(item.type)}"
+                         data-call-name="${h(item.name)}"
+                         data-nav-target="module:${h(item.targetContext)}:${h(item.targetModule)}">
+                        <canvas id="${canvasId}" style="height: 120px; max-width: 100%;"></canvas>
+                    </div>
+                </article>
+            `;
+        }
+
+        function initExternalCallGraphs(forceReinit = false) {
+            $$('.external-call-graph').forEach(container => {
+                const canvas = container.querySelector('canvas');
+                if (!canvas) return;
+
+                // Destroy existing app if reinitializing
+                if (forceReinit && canvas._pixiApp) {
+                    canvas._pixiApp.destroy(false);
+                    canvas.dataset.initialized = '';
+                }
+
+                if (canvas.dataset.initialized) return;
+
+                const isDark = document.documentElement.classList.contains('dark');
+                const width = Math.min(container.offsetWidth || 420, 420);
+                const height = 120;
+
+                const app = new PIXI.Application({
+                    view: canvas,
+                    width: width,
+                    height: height,
+                    backgroundAlpha: 0,
+                    antialias: true,
+                    resolution: window.devicePixelRatio || 1,
+                    autoDensity: true
+                });
+
+                canvas._pixiApp = app;
+                canvas.dataset.initialized = 'true';
+
+                const { sourceModule, sourceClass, targetContext, targetModule, callType, callName, navTarget } = container.dataset;
+
+                // Colors
+                const circleColor = isDark ? 0x0ea5e9 : 0x0284c7;
+                const arrowColor = isDark ? 0x06b6d4 : 0x0891b2;
+                const textColor = isDark ? 0xe2e8f0 : 0x334155;
+                const labelBg = callType === 'query' ? (isDark ? 0x4c1d95 : 0xede9fe) : (isDark ? 0x064e3b : 0xd1fae5);
+                const labelText = callType === 'query' ? (isDark ? 0xc4b5fd : 0x5b21b6) : (isDark ? 0x6ee7b7 : 0x047857);
+
+                const circleRadius = 32;
+                const padding = 20;
+                const centerY = height / 2 - 5;
+
+                // Source circle (left)
+                const sourceX = padding + circleRadius + 20;
+                const sourceCircle = new PIXI.Graphics();
+                sourceCircle.beginFill(circleColor, 0.15);
+                sourceCircle.lineStyle(2, circleColor);
+                sourceCircle.drawCircle(0, 0, circleRadius);
+                sourceCircle.endFill();
+                sourceCircle.x = sourceX;
+                sourceCircle.y = centerY;
+                app.stage.addChild(sourceCircle);
+
+                // Source text
+                const sourceText = new PIXI.Text(sourceModule.substring(0, 3).toUpperCase(), {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fill: circleColor
+                });
+                sourceText.anchor.set(0.5);
+                sourceText.x = sourceX;
+                sourceText.y = centerY;
+                app.stage.addChild(sourceText);
+
+                // Source label below (module name)
+                const sourceLabelText = new PIXI.Text(sourceModule, {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 10,
+                    fill: textColor
+                });
+                sourceLabelText.anchor.set(0.5, 0);
+                sourceLabelText.x = sourceX;
+                sourceLabelText.y = centerY + circleRadius + 6;
+                app.stage.addChild(sourceLabelText);
+
+                // Target circle (right)
+                const targetX = width - padding - circleRadius - 20;
+                const targetCircle = new PIXI.Graphics();
+                targetCircle.beginFill(circleColor, 0.15);
+                targetCircle.lineStyle(2, circleColor);
+                targetCircle.drawCircle(0, 0, circleRadius);
+                targetCircle.endFill();
+                targetCircle.x = targetX;
+                targetCircle.y = centerY;
+                targetCircle.eventMode = 'static';
+                targetCircle.cursor = 'pointer';
+                const targetTab = callType === 'query' ? 'queries' : 'commands';
+                targetCircle.on('pointerdown', () => {
+                    navigate(`${navTarget}:${targetTab}`);
+                });
+                app.stage.addChild(targetCircle);
+
+                // Target text
+                const targetText = new PIXI.Text(targetModule.substring(0, 3).toUpperCase(), {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fill: circleColor
+                });
+                targetText.anchor.set(0.5);
+                targetText.x = targetX;
+                targetText.y = centerY;
+                targetText.eventMode = 'static';
+                targetText.cursor = 'pointer';
+                targetText.on('pointerdown', () => {
+                    navigate(`${navTarget}:${targetTab}`);
+                });
+                app.stage.addChild(targetText);
+
+                // Target label below
+                const targetLabelText = new PIXI.Text(`${targetContext}/${targetModule}`, {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 10,
+                    fill: textColor
+                });
+                targetLabelText.anchor.set(0.5, 0);
+                targetLabelText.x = targetX;
+                targetLabelText.y = centerY + circleRadius + 6;
+                app.stage.addChild(targetLabelText);
+
+                // Arrow line (animated dashes)
+                const arrowStartX = sourceX + circleRadius;
+                const arrowEndX = targetX - circleRadius;
+                const dashLength = 8;
+                const gapLength = 6;
+                const patternLength = dashLength + gapLength;
+                let dashOffset = 0;
+
+                const arrowLine = new PIXI.Graphics();
+                app.stage.addChild(arrowLine);
+
+                const drawDashedLine = () => {
+                    arrowLine.clear();
+                    arrowLine.lineStyle(2, arrowColor);
+
+                    let x = arrowStartX - patternLength + dashOffset;
+
+                    while (x < arrowEndX - 10) {
+                        const startX = Math.max(x, arrowStartX);
+                        const endX = Math.min(x + dashLength, arrowEndX - 10);
+                        if (startX < endX) {
+                            arrowLine.moveTo(startX, centerY);
+                            arrowLine.lineTo(endX, centerY);
+                        }
+                        x += patternLength;
+                    }
+                };
+
+                drawDashedLine();
+
+                // Animate dashes (left to right)
+                app.ticker.add(() => {
+                    dashOffset = (dashOffset + 0.2) % patternLength;
+                    drawDashedLine();
+                });
+
+                // Arrow head (static, touching target circle)
+                const arrowHead = new PIXI.Graphics();
+                arrowHead.beginFill(arrowColor);
+                arrowHead.moveTo(arrowEndX, centerY);
+                arrowHead.lineTo(arrowEndX - 10, centerY - 6);
+                arrowHead.lineTo(arrowEndX - 10, centerY + 6);
+                arrowHead.closePath();
+                arrowHead.endFill();
+                app.stage.addChild(arrowHead);
+
+                // Label in the middle
+                const labelCenterX = (arrowStartX + arrowEndX) / 2;
+                const labelPadding = 8;
+                const labelBgGraphics = new PIXI.Graphics();
+
+                const callLabelText = new PIXI.Text(callName, {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 11,
+                    fontWeight: '500',
+                    fill: labelText
+                });
+                callLabelText.anchor.set(0.5);
+                callLabelText.x = labelCenterX;
+                callLabelText.y = centerY - 20;
+
+                const labelWidth = callLabelText.width + labelPadding * 2;
+                const labelHeight = callLabelText.height + labelPadding;
+                labelBgGraphics.beginFill(labelBg);
+                labelBgGraphics.drawRoundedRect(
+                    labelCenterX - labelWidth / 2,
+                    centerY - 20 - labelHeight / 2,
+                    labelWidth,
+                    labelHeight,
+                    4
+                );
+                labelBgGraphics.endFill();
+
+                app.stage.addChild(labelBgGraphics);
+                app.stage.addChild(callLabelText);
+            });
+        }
+
+        function renderSubscriber(item, color, contextName, moduleName, index) {
+            const canvasId = `subscriber-${index}-${Date.now()}`;
+            const eventLoc = findEventLocation(item.eventClass);
+            return `
+                <article class="rounded-lg border border-${color}-200 dark:border-${color}-800 bg-${color}-50/50 dark:bg-${color}-900/10 p-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <h3 class="text-base font-semibold cursor-help border-b border-dashed border-slate-400 dark:border-slate-600" title="${h(item.class)}">${h(item.name)}</h3>
+                        <span class="text-xs font-medium px-1.5 py-0.5 rounded-full bg-${color}-100 dark:bg-${color}-900/50 text-${color}-700 dark:text-${color}-300">subscriber</span>
+                    </div>
+                    ${item.description ? `<p class="text-sm text-slate-600 dark:text-slate-400 mb-3">${h(item.description)}</p>` : ''}
+                    <div class="subscriber-graph flex justify-center"
+                         data-canvas-id="${canvasId}"
+                         data-subscriber-module="${h(moduleName)}"
+                         data-subscriber-class="${h(item.class)}"
+                         data-event-name="${h(item.event)}"
+                         data-event-class="${h(item.eventClass)}"
+                         data-event-context="${eventLoc ? h(eventLoc.context) : ''}"
+                         data-event-module="${eventLoc ? h(eventLoc.module) : ''}"
+                         data-nav-target="${eventLoc ? `module:${h(eventLoc.context)}:${h(eventLoc.module)}` : ''}">
+                        <canvas id="${canvasId}" style="height: 120px; max-width: 100%;"></canvas>
+                    </div>
+                </article>
+            `;
+        }
+
+        function initSubscriberGraphs(forceReinit = false) {
+            $$('.subscriber-graph').forEach(container => {
+                const canvas = container.querySelector('canvas');
+                if (!canvas) return;
+
+                // Destroy existing app if reinitializing
+                if (forceReinit && canvas._pixiApp) {
+                    canvas._pixiApp.destroy(false);
+                    canvas.dataset.initialized = '';
+                }
+
+                if (canvas.dataset.initialized) return;
+
+                const isDark = document.documentElement.classList.contains('dark');
+                const width = Math.min(container.offsetWidth || 420, 420);
+                const height = 120;
+
+                const app = new PIXI.Application({
+                    view: canvas,
+                    width: width,
+                    height: height,
+                    backgroundAlpha: 0,
+                    antialias: true,
+                    resolution: window.devicePixelRatio || 1,
+                    autoDensity: true
+                });
+
+                canvas._pixiApp = app;
+                canvas.dataset.initialized = 'true';
+
+                const { subscriberModule, eventName, eventContext, eventModule, navTarget } = container.dataset;
+
+                // Colors (rose theme for subscribers)
+                const circleColor = isDark ? 0xf43f5e : 0xe11d48;
+                const arrowColor = isDark ? 0xfb7185 : 0xf43f5e;
+                const textColor = isDark ? 0xe2e8f0 : 0x334155;
+                const labelBg = isDark ? 0x4c1d95 : 0xfef3c7;
+                const labelText = isDark ? 0xfbbf24 : 0xb45309;
+
+                const circleRadius = 32;
+                const padding = 20;
+                const centerY = height / 2 - 5;
+
+                // Subscriber circle (left) - current module
+                const sourceX = padding + circleRadius + 20;
+                const sourceCircle = new PIXI.Graphics();
+                sourceCircle.beginFill(circleColor, 0.15);
+                sourceCircle.lineStyle(2, circleColor);
+                sourceCircle.drawCircle(0, 0, circleRadius);
+                sourceCircle.endFill();
+                sourceCircle.x = sourceX;
+                sourceCircle.y = centerY;
+                app.stage.addChild(sourceCircle);
+
+                // Subscriber text
+                const sourceText = new PIXI.Text(subscriberModule.substring(0, 3).toUpperCase(), {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fill: circleColor
+                });
+                sourceText.anchor.set(0.5);
+                sourceText.x = sourceX;
+                sourceText.y = centerY;
+                app.stage.addChild(sourceText);
+
+                // Subscriber label below
+                const sourceLabelText = new PIXI.Text(subscriberModule, {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 10,
+                    fill: textColor
+                });
+                sourceLabelText.anchor.set(0.5, 0);
+                sourceLabelText.x = sourceX;
+                sourceLabelText.y = centerY + circleRadius + 6;
+                app.stage.addChild(sourceLabelText);
+
+                // Event source circle (right) - clickable to navigate to event module
+                const targetX = width - padding - circleRadius - 20;
+                const targetCircle = new PIXI.Graphics();
+                targetCircle.beginFill(circleColor, 0.15);
+                targetCircle.lineStyle(2, circleColor);
+                targetCircle.drawCircle(0, 0, circleRadius);
+                targetCircle.endFill();
+                targetCircle.x = targetX;
+                targetCircle.y = centerY;
+                if (navTarget) {
+                    targetCircle.eventMode = 'static';
+                    targetCircle.cursor = 'pointer';
+                    targetCircle.on('pointerdown', () => {
+                        navigate(`${navTarget}:domainEvents`);
+                    });
+                }
+                app.stage.addChild(targetCircle);
+
+                // Event source text
+                const targetAbbr = eventModule ? eventModule.substring(0, 3).toUpperCase() : '?';
+                const targetText = new PIXI.Text(targetAbbr, {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                    fill: circleColor
+                });
+                targetText.anchor.set(0.5);
+                targetText.x = targetX;
+                targetText.y = centerY;
+                if (navTarget) {
+                    targetText.eventMode = 'static';
+                    targetText.cursor = 'pointer';
+                    targetText.on('pointerdown', () => {
+                        navigate(`${navTarget}:domainEvents`);
+                    });
+                }
+                app.stage.addChild(targetText);
+
+                // Event source label below
+                const targetLabel = eventModule ? `${eventContext}/${eventModule}` : 'External';
+                const targetLabelText = new PIXI.Text(targetLabel, {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 10,
+                    fill: textColor
+                });
+                targetLabelText.anchor.set(0.5, 0);
+                targetLabelText.x = targetX;
+                targetLabelText.y = centerY + circleRadius + 6;
+                app.stage.addChild(targetLabelText);
+
+                // Arrow line (animated dashes - RIGHT TO LEFT for incoming events)
+                const arrowStartX = sourceX + circleRadius + 10; // Leave space for arrow head on left
+                const arrowEndX = targetX - circleRadius; // Touch the right circle
+                const dashLength = 8;
+                const gapLength = 6;
+                const patternLength = dashLength + gapLength;
+                let dashOffset = 0;
+
+                const arrowLine = new PIXI.Graphics();
+                app.stage.addChild(arrowLine);
+
+                const drawDashedLine = () => {
+                    arrowLine.clear();
+                    arrowLine.lineStyle(2, arrowColor);
+
+                    let x = arrowStartX - patternLength + dashOffset;
+
+                    while (x < arrowEndX) {
+                        const startX = Math.max(x, arrowStartX);
+                        const endX = Math.min(x + dashLength, arrowEndX);
+                        if (startX < endX) {
+                            arrowLine.moveTo(startX, centerY);
+                            arrowLine.lineTo(endX, centerY);
+                        }
+                        x += patternLength;
+                    }
+                };
+
+                drawDashedLine();
+
+                // Animate dashes (RIGHT TO LEFT - opposite direction for incoming events)
+                app.ticker.add(() => {
+                    dashOffset = (dashOffset - 0.2 + patternLength) % patternLength;
+                    drawDashedLine();
+                });
+
+                // Arrow head pointing LEFT (touching the left circle)
+                const arrowHeadX = sourceX + circleRadius;
+                const arrowHead = new PIXI.Graphics();
+                arrowHead.beginFill(arrowColor);
+                arrowHead.moveTo(arrowHeadX, centerY);
+                arrowHead.lineTo(arrowHeadX + 10, centerY - 6);
+                arrowHead.lineTo(arrowHeadX + 10, centerY + 6);
+                arrowHead.closePath();
+                arrowHead.endFill();
+                app.stage.addChild(arrowHead);
+
+                // Label in the middle (event name)
+                const labelCenterX = (arrowStartX + arrowEndX) / 2;
+                const labelPadding = 8;
+                const labelBgGraphics = new PIXI.Graphics();
+
+                const eventLabelText = new PIXI.Text(eventName, {
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 11,
+                    fontWeight: '500',
+                    fill: labelText
+                });
+                eventLabelText.anchor.set(0.5);
+                eventLabelText.x = labelCenterX;
+                eventLabelText.y = centerY - 20;
+
+                const labelWidth = eventLabelText.width + labelPadding * 2;
+                const labelHeight = eventLabelText.height + labelPadding;
+                labelBgGraphics.beginFill(labelBg);
+                labelBgGraphics.drawRoundedRect(
+                    labelCenterX - labelWidth / 2,
+                    centerY - 20 - labelHeight / 2,
+                    labelWidth,
+                    labelHeight,
+                    4
+                );
+                labelBgGraphics.endFill();
+
+                app.stage.addChild(labelBgGraphics);
+                app.stage.addChild(eventLabelText);
+            });
+        }
+
+        function renderItem(item, type, color) {
+            const badge = type === 'commands' ? 'command' : type === 'queries' ? 'query' : type === 'domainEvents' ? 'event' : type === 'eventSubscribers' ? 'subscriber' : 'call';
+            let content = `
+                <div class="flex items-center gap-2 mb-1">
+                    <h3 class="text-base font-semibold ${item.class ? 'cursor-help border-b border-dashed border-slate-400 dark:border-slate-600' : ''}" ${item.class ? `title="${h(item.class)}"` : ''}>${h(item.name)}</h3>
+                    <span class="text-xs font-medium px-1.5 py-0.5 rounded-full bg-${color}-100 dark:bg-${color}-900/50 text-${color}-700 dark:text-${color}-300">${badge}</span>
+                </div>
+                ${item.description ? `<p class="text-sm text-slate-600 dark:text-slate-400 mb-2">${h(item.description)}</p>` : ''}
+            `;
+
+            if (item.input?.length) {
+                content += `<div class="mt-4"><table class="w-full text-sm"><thead><tr class="border-b border-slate-200 dark:border-slate-700">
+                    <th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Name</th><th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Type</th>
+                </tr></thead><tbody>
+                    ${item.input.map(p => `<tr class="border-b border-slate-100 dark:border-slate-800 last:border-0"><td class="py-1.5 pr-4 font-mono text-primary-600 dark:text-primary-400">${h(p.name)}</td><td class="py-1.5 pr-4 ${p.class ? 'cursor-help' : ''} text-slate-600 dark:text-slate-400" ${p.class ? `title="${h(p.class)}"` : ''}>${h(p.type)}</td></tr>`).join('')}
+                </tbody></table></div>`;
+            }
+
+            if (item.output && item.output.type !== 'void') {
+                content += `<div class="mt-4 text-sm"><span class="text-slate-500">Returns:</span> <span class="${item.output.class ? 'cursor-help border-b border-dashed border-slate-400 dark:border-slate-600' : ''} font-medium text-slate-700 dark:text-slate-300" ${item.output.class ? `title="${h(item.output.class)}"` : ''}>${h(item.output.type)}</span></div>`;
+            }
+
+            if (item.properties?.length) {
+                content += `<div class="mt-4"><table class="w-full text-sm"><thead><tr class="border-b border-slate-200 dark:border-slate-700">
+                    <th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Name</th><th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Type</th><th class="text-left py-1.5 font-medium text-slate-500 text-xs">Description</th>
+                </tr></thead><tbody>
+                    ${item.properties.map(p => `<tr class="border-b border-slate-100 dark:border-slate-800 last:border-0"><td class="py-1.5 pr-4 font-mono text-primary-600 dark:text-primary-400">${h(p.name)}</td><td class="py-1.5 pr-4 text-slate-600 dark:text-slate-400">${h(p.type)}</td><td class="py-1.5 text-slate-500 text-xs">${p.description ? h(p.description) : '-'}</td></tr>`).join('')}
+                </tbody></table></div>`;
+            }
+
+            if (item.event) {
+                const eventLoc = findEventLocation(item.eventClass);
+                const eventLink = eventLoc ? `data-nav="module:${h(eventLoc.context)}:${h(eventLoc.module)}:domainEvents"` : '';
+                content += `<div class="flex items-center gap-2 mt-4 text-sm"><span class="text-slate-500">Listens to:</span>
+                    <a href="#" ${eventLink} class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium hover:bg-amber-200 dark:hover:bg-amber-800/40 transition-colors" title="${h(item.eventClass)}">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                        ${h(item.event)}
+                    </a></div>`;
+            }
+
+            return `<article class="rounded-lg border border-${color}-200 dark:border-${color}-800 bg-${color}-50/50 dark:bg-${color}-900/10 p-4">${content}</article>`;
+        }
+    })();
+    </script>
+</body>
+</html>
