@@ -1,0 +1,24 @@
+{
+    "name": "open-solid/arch-viewer",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "description": "Export and visualize your OpenSolid project architecture",
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.5",
+        "symfony/framework-bundle": "^7.4"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "OpenSolid\\ArchViewer\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OpenSolid\\ArchViewer\\Tests\\": "tests/"
+        }
+    }
+}
