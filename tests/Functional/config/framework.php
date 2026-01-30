@@ -1,5 +1,6 @@
 <?php
 
+use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $container): void {
@@ -12,4 +13,7 @@ return static function (ContainerConfigurator $container): void {
             'log' => true,
         ],
     ]);
+
+    $container->services()
+        ->set('logger', NullLogger::class);
 };

@@ -2,6 +2,11 @@
 
 namespace OpenSolid\ArchViewer\Controller;
 
+use OpenSolid\ArchViewer\Command\ExportCommand;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -10,6 +15,7 @@ final readonly class ViewerController
 {
     public function __construct(
         private UrlGeneratorInterface $urlGenerator,
+        private ExportCommand $exportCommand,
         private string $archJsonPath,
     ) {
     }
@@ -17,6 +23,7 @@ final readonly class ViewerController
     public function __invoke(Request $request): Response
     {
         $archJsonUrl = $this->urlGenerator->generate('arch_json_controller');
+        $archJsonUpdateUrl = $this->urlGenerator->generate('arch_json_update_controller');
 
         ob_start();
         include __DIR__ . '/../../templates/arch_viewer.html.php';
@@ -31,5 +38,14 @@ final readonly class ViewerController
             content: file_get_contents($this->archJsonPath),
             headers: ['Content-Type' => 'application/json'],
         );
+    }
+
+    public function updateArchJson(): JsonResponse
+    {
+        $io = new SymfonyStyle(new ArrayInput([]), new NullOutput());
+
+        $exitCode = ($this->exportCommand)($io, outputFile: $this->archJsonPath);
+
+        return new JsonResponse(['success' => 0 === $exitCode]);
     }
 }

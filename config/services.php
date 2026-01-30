@@ -84,6 +84,7 @@ return static function (ContainerConfigurator $container): void {
     $services->set(ViewerController::class)
         ->args([
             service(UrlGeneratorInterface::class),
+            service('arch_viewer.arch_export_command'),
             param('kernel.project_dir').'/arch.json',
         ])
         ->tag('controller.service_arguments');

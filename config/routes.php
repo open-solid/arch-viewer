@@ -12,5 +12,9 @@ return static function (RoutingConfigurator $routes): void {
         ->add('arch_json_controller', '/arch.json')
             ->controller(ViewerController::class.'::archJson')
             ->methods(['GET'])
+
+        ->add('arch_json_update_controller', '/arch.json')
+            ->controller(ViewerController::class.'::updateArchJson')
+            ->methods(['POST'])
     ;
 };
