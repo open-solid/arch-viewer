@@ -145,9 +145,12 @@
 
     <template id="tpl-module">
         <div class="fade-in">
-            <header class="flex items-center gap-3 mb-10">
-                <h1 class="text-3xl font-bold" data-module></h1>
-                <span class="text-sm font-medium px-2.5 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" data-context></span>
+            <header class="mb-10">
+                <div class="flex items-center gap-3 mb-2">
+                    <h1 class="text-3xl font-bold" data-module></h1>
+                    <span class="text-sm font-medium px-2.5 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" data-context></span>
+                </div>
+                <p class="text-slate-600 dark:text-slate-400" data-description hidden></p>
             </header>
             <div data-sections></div>
         </div>
@@ -314,6 +317,11 @@
             const tpl = $('#tpl-module').content.cloneNode(true);
             $('[data-context]', tpl).textContent = ctxName;
             $('[data-module]', tpl).textContent = modName;
+            if (mod.description) {
+                const descEl = $('[data-description]', tpl);
+                descEl.textContent = mod.description;
+                descEl.hidden = false;
+            }
 
             const sectionConfig = [
                 { key: 'commands', title: 'Commands', color: 'emerald', icon: 'M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5' },
