@@ -411,6 +411,28 @@
             // Render filter controls using DOM methods (safe from XSS)
             if (filtersContainer) {
                 filtersContainer.textContent = '';
+
+                // Add show/hide toggle button for filters
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-200 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors';
+                toggleBtn.dataset.filtersVisible = 'false';
+                toggleBtn.textContent = 'Filters';
+                filtersContainer.appendChild(toggleBtn);
+
+                // Create container for all filter checkboxes (hidden by default)
+                const filtersListContainer = document.createElement('div');
+                filtersListContainer.className = 'hidden flex-wrap gap-3';
+                filtersListContainer.id = 'filters-list';
+
+                toggleBtn.onclick = () => {
+                    const isVisible = toggleBtn.dataset.filtersVisible === 'true';
+                    const newState = !isVisible;
+                    toggleBtn.dataset.filtersVisible = String(newState);
+                    toggleBtn.textContent = newState ? 'Hide Filters' : 'Filters';
+                    filtersListContainer.classList.toggle('hidden', !newState);
+                    filtersListContainer.classList.toggle('flex', newState);
+                };
+
                 contextNames.forEach(ctxName => {
                     const ctxModules = contextGroups[ctxName];
                     const isCtxHidden = contextMapState.hiddenContexts.has(ctxName);
@@ -465,8 +487,10 @@
                     });
 
                     details.appendChild(modContainer);
-                    filtersContainer.appendChild(details);
+                    filtersListContainer.appendChild(details);
                 });
+
+                filtersContainer.appendChild(filtersListContainer);
 
                 // Add filter event listeners
                 filtersContainer.onclick = e => {
