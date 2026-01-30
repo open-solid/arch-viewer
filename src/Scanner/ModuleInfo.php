@@ -10,6 +10,7 @@ final readonly class ModuleInfo
         public string $context,
         public string $module,
         public string $path,
+        public ?string $description = null,
     ) {
     }
 }

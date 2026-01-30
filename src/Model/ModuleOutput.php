@@ -21,6 +21,7 @@ final readonly class ModuleOutput implements \JsonSerializable
      */
     public function __construct(
         public string $name,
+        public ?string $description = null,
         public array $commands = [],
         public array $queries = [],
         public array $domainEvents = [],
@@ -35,6 +36,10 @@ final readonly class ModuleOutput implements \JsonSerializable
     public function jsonSerialize(): array
     {
         $data = ['name' => $this->name];
+
+        if (null !== $this->description) {
+            $data['description'] = $this->description;
+        }
 
         if ([] !== $this->commands) {
             $data['commands'] = $this->commands;

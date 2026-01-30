@@ -35,6 +35,7 @@ final readonly class ArchExporter
         foreach ($this->moduleScanner->scan($srcDir) as $moduleInfo) {
             $moduleOutput = new ModuleOutput(
                 name: $moduleInfo->module,
+                description: $moduleInfo->description,
                 commands: $this->commandExtractor->extract($moduleInfo),
                 queries: $this->queryExtractor->extract($moduleInfo),
                 domainEvents: $this->domainEventExtractor->extract($moduleInfo),

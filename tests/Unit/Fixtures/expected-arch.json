@@ -5,6 +5,7 @@
             "modules": [
                 {
                     "name": "Invoice",
+                    "description": "Handles invoice creation, retrieval, and billing operations.",
                     "commands": [
                         {
                             "name": "CreateInvoice",
@@ -101,6 +102,7 @@
             "modules": [
                 {
                     "name": "Customer",
+                    "description": "Manages customer identity and profile information.",
                     "queries": [
                         {
                             "name": "FindCustomer",

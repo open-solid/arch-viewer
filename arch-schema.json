@@ -46,6 +46,10 @@
                     "type": "string",
                     "description": "The name of the module."
                 },
+                "description": {
+                    "type": "string",
+                    "description": "A description of the module's purpose."
+                },
                 "commands": {
                     "type": "array",
                     "description": "List of commands in the module.",

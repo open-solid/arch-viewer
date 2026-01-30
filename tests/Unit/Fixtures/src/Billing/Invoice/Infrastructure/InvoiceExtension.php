@@ -6,6 +6,9 @@ namespace App\Billing\Invoice\Infrastructure;
 
 use OpenSolid\Core\Infrastructure\Symfony\Module\ModuleExtension;
 
+/**
+ * Handles invoice creation, retrieval, and billing operations.
+ */
 final class InvoiceExtension extends ModuleExtension
 {
 }

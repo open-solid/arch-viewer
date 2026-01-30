@@ -48,11 +48,13 @@ final class ArchExporterTest extends TestCase
                 context: 'Billing',
                 module: 'Invoice',
                 path: $fixturesPath.'/Billing/Invoice',
+                description: 'Handles invoice creation, retrieval, and billing operations.',
             ),
             new ModuleInfo(
                 context: 'Identity',
                 module: 'Customer',
                 path: $fixturesPath.'/Identity/Customer',
+                description: 'Manages customer identity and profile information.',
             ),
         ]);
 
@@ -117,6 +119,7 @@ final class ArchExporterTest extends TestCase
         // Verify module structure
         $invoiceModule = $billingContext['modules'][0];
         self::assertArrayHasKey('name', $invoiceModule);
+        self::assertArrayHasKey('description', $invoiceModule);
         self::assertArrayHasKey('commands', $invoiceModule);
         self::assertArrayHasKey('queries', $invoiceModule);
         self::assertArrayHasKey('domainEvents', $invoiceModule);
@@ -271,6 +274,7 @@ final class ArchExporterTest extends TestCase
 
         $invoiceModule = new ModuleOutput(
             name: 'Invoice',
+            description: 'Handles invoice creation, retrieval, and billing operations.',
             commands: [$createInvoiceCommand],
             queries: [$findInvoiceQuery],
             domainEvents: [$invoiceCreatedEvent],
@@ -303,6 +307,7 @@ final class ArchExporterTest extends TestCase
 
         $customerModule = new ModuleOutput(
             name: 'Customer',
+            description: 'Manages customer identity and profile information.',
             commands: [],
             queries: [$findCustomerQuery],
             domainEvents: [],

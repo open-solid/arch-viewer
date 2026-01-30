@@ -54,13 +54,52 @@ final readonly class ModuleScanner implements ModuleScannerInterface
             }
 
             $modulePath = dirname($file->getRealPath(), 2);
+            $description = $this->extractDescription($reflection);
 
             yield new ModuleInfo(
                 context: $context,
                 module: $module,
                 path: $modulePath,
+                description: $description,
             );
         }
+    }
+
+    private function extractDescription(\ReflectionClass $reflection): ?string
+    {
+        $docComment = $reflection->getDocComment();
+
+        if (false === $docComment) {
+            return null;
+        }
+
+        // Remove the opening /** and closing */
+        $docComment = preg_replace('/^\/\*\*\s*|\s*\*\/$/', '', $docComment);
+
+        // Split into lines and process
+        $lines = explode("\n", $docComment);
+        $descriptionLines = [];
+
+        foreach ($lines as $line) {
+            // Remove leading asterisks and whitespace
+            $line = preg_replace('/^\s*\*\s?/', '', $line);
+            $line = trim($line);
+
+            // Stop at first annotation
+            if (str_starts_with($line, '@')) {
+                break;
+            }
+
+            if ('' !== $line) {
+                $descriptionLines[] = $line;
+            }
+        }
+
+        if ([] === $descriptionLines) {
+            return null;
+        }
+
+        return implode(' ', $descriptionLines);
     }
 
     private function resolveClassName(string $filePath, string $context, string $module): ?string
