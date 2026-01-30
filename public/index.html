@@ -672,6 +672,9 @@
                     rel.pairTotal = pairCounts[k];
                 });
 
+                // Store animated event lines for ticker
+                const animatedEventLines = [];
+
                 // Draw relationships
                 visibleRelationships.forEach(rel => {
                     const fromPos = positions[rel.from], toPos = positions[rel.to];
@@ -697,22 +700,18 @@
                     const midX = (startX + endX) / 2 + px * curveOffset, midY = (startY + endY) / 2 + py * curveOffset;
 
                     const line = new PIXI.Graphics();
-                    line.lineStyle(2, color, 0.8);
                     if (rel.type !== 'event') {
                         // Solid line for Command Bus and Query Bus
+                        line.lineStyle(2, color, 0.8);
                         line.moveTo(startX, startY);
                         line.quadraticCurveTo(midX, midY, endX, endY);
                     } else {
-                        let dashOn = true;
-                        for (let i = 0; i < 30; i++) {
-                            const t1 = i / 30, t2 = (i + 1) / 30;
-                            const x1 = (1-t1)*(1-t1)*startX + 2*(1-t1)*t1*midX + t1*t1*endX;
-                            const y1 = (1-t1)*(1-t1)*startY + 2*(1-t1)*t1*midY + t1*t1*endY;
-                            const x2 = (1-t2)*(1-t2)*startX + 2*(1-t2)*t2*midX + t2*t2*endX;
-                            const y2 = (1-t2)*(1-t2)*startY + 2*(1-t2)*t2*midY + t2*t2*endY;
-                            if (dashOn) { line.moveTo(x1, y1); line.lineTo(x2, y2); }
-                            if (i % 2 === 1) dashOn = !dashOn;
-                        }
+                        // Store event line data for animation
+                        animatedEventLines.push({
+                            graphics: line,
+                            color: color,
+                            startX, startY, midX, midY, endX, endY
+                        });
                     }
                     app.stage.addChild(line);
 
@@ -737,6 +736,86 @@
                     labelBg.endFill();
                     app.stage.addChild(labelBg); app.stage.addChild(labelText);
                 });
+
+                // Animate event-driven lines
+                if (animatedEventLines.length > 0) {
+                    let dashOffset = 0;
+                    const dashLength = 8;
+                    const gapLength = 6;
+                    const totalSegments = 60; // More segments for smoother curve
+
+                    const drawAnimatedDashes = () => {
+                        animatedEventLines.forEach(({ graphics, color, startX, startY, midX, midY, endX, endY }) => {
+                            graphics.clear();
+                            graphics.lineStyle(2, color, 0.8);
+
+                            // Calculate points along the quadratic bezier curve
+                            const points = [];
+                            for (let i = 0; i <= totalSegments; i++) {
+                                const t = i / totalSegments;
+                                const x = (1-t)*(1-t)*startX + 2*(1-t)*t*midX + t*t*endX;
+                                const y = (1-t)*(1-t)*startY + 2*(1-t)*t*midY + t*t*endY;
+                                points.push({ x, y });
+                            }
+
+                            // Calculate cumulative distances
+                            const distances = [0];
+                            for (let i = 1; i < points.length; i++) {
+                                const dx = points[i].x - points[i-1].x;
+                                const dy = points[i].y - points[i-1].y;
+                                distances.push(distances[i-1] + Math.sqrt(dx*dx + dy*dy));
+                            }
+                            const totalLength = distances[distances.length - 1];
+                            const patternLength = dashLength + gapLength;
+
+                            // Draw dashes along the curve with offset
+                            let currentDist = -dashOffset;
+                            while (currentDist < totalLength) {
+                                const dashStart = Math.max(0, currentDist);
+                                const dashEnd = Math.min(totalLength, currentDist + dashLength);
+
+                                if (dashEnd > 0 && dashStart < totalLength) {
+                                    // Find points at dashStart and dashEnd distances
+                                    let startIdx = 0, endIdx = 0;
+                                    for (let i = 0; i < distances.length - 1; i++) {
+                                        if (distances[i] <= dashStart && distances[i+1] > dashStart) startIdx = i;
+                                        if (distances[i] <= dashEnd && distances[i+1] > dashEnd) endIdx = i;
+                                    }
+                                    if (dashEnd >= totalLength) endIdx = distances.length - 2;
+
+                                    // Interpolate start point
+                                    const startT = (dashStart - distances[startIdx]) / (distances[startIdx+1] - distances[startIdx] || 1);
+                                    const sx = points[startIdx].x + startT * (points[startIdx+1].x - points[startIdx].x);
+                                    const sy = points[startIdx].y + startT * (points[startIdx+1].y - points[startIdx].y);
+
+                                    // Interpolate end point
+                                    const endT = (dashEnd - distances[endIdx]) / (distances[endIdx+1] - distances[endIdx] || 1);
+                                    const ex = points[endIdx].x + endT * (points[endIdx+1].x - points[endIdx].x);
+                                    const ey = points[endIdx].y + endT * (points[endIdx+1].y - points[endIdx].y);
+
+                                    graphics.moveTo(sx, sy);
+                                    // Draw through intermediate points for smooth curve
+                                    for (let i = startIdx + 1; i <= endIdx; i++) {
+                                        graphics.lineTo(points[i].x, points[i].y);
+                                    }
+                                    graphics.lineTo(ex, ey);
+                                }
+
+                                currentDist += patternLength;
+                            }
+                        });
+                    };
+
+                    // Initial draw
+                    drawAnimatedDashes();
+
+                    // Animate (slow movement in arrow direction)
+                    const patternLength = dashLength + gapLength;
+                    app.ticker.add(() => {
+                        dashOffset = (dashOffset - 0.3 + patternLength) % patternLength;
+                        drawAnimatedDashes();
+                    });
+                }
 
                 // Draw modules (no navigation)
                 visibleModules.forEach(mod => {
