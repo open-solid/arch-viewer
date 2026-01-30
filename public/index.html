@@ -878,9 +878,9 @@
 
             if (item.input?.length) {
                 content += `<div class="mt-4"><table class="w-full text-sm"><thead><tr class="border-b border-slate-200 dark:border-slate-700">
-                    <th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Name</th><th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Type</th>
+                    <th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Name</th><th class="text-left py-1.5 pr-4 font-medium text-slate-500 text-xs">Type</th><th class="text-left py-1.5 font-medium text-slate-500 text-xs">Description</th>
                 </tr></thead><tbody>
-                    ${item.input.map(p => `<tr class="border-b border-slate-100 dark:border-slate-800 last:border-0"><td class="py-1.5 pr-4 font-mono text-primary-600 dark:text-primary-400">${h(p.name)}</td><td class="py-1.5 pr-4 ${p.class ? 'cursor-help' : ''} text-slate-600 dark:text-slate-400" ${p.class ? `title="${h(p.class)}"` : ''}>${h(p.type)}</td></tr>`).join('')}
+                    ${item.input.map(p => `<tr class="border-b border-slate-100 dark:border-slate-800 last:border-0"><td class="py-1.5 pr-4 font-mono text-primary-600 dark:text-primary-400">${h(p.name)}</td><td class="py-1.5 pr-4 ${p.class ? 'cursor-help' : ''} text-slate-600 dark:text-slate-400" ${p.class ? `title="${h(p.class)}"` : ''}>${h(p.type)}</td><td class="py-1.5 text-slate-500 text-xs">${p.description ? h(p.description) : '-'}</td></tr>`).join('')}
                 </tbody></table></div>`;
             }
 

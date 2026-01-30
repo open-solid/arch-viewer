@@ -12,9 +12,9 @@
                             "class": "App\\Billing\\Invoice\\Application\\Create\\CreateInvoice",
                             "description": "Creates a new invoice for a customer.",
                             "input": [
-                                { "name": "customerId", "type": "InvoiceCustomerId", "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceCustomerId" },
-                                { "name": "amount", "type": "int" },
-                                { "name": "currency", "type": "string" }
+                                { "name": "customerId", "type": "InvoiceCustomerId", "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceCustomerId", "description": "The customer who will own the invoice." },
+                                { "name": "amount", "type": "int", "description": "The invoice amount in cents." },
+                                { "name": "currency", "type": "string", "description": "The currency code (e.g., USD, EUR)." }
                             ],
                             "output": { "type": "InvoiceId", "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceId" }
                         },
@@ -46,7 +46,7 @@
                             "class": "App\\Billing\\Invoice\\Application\\Find\\FindInvoice",
                             "description": "Retrieves an invoice by its identifier.",
                             "input": [
-                                { "name": "id", "type": "InvoiceId", "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceId" }
+                                { "name": "id", "type": "InvoiceId", "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceId", "description": "The unique identifier of the invoice." }
                             ],
                             "output": { "type": "Invoice", "class": "App\\Billing\\Invoice\\Domain\\Model\\Invoice" }
                         },
@@ -261,9 +261,9 @@
                             "class": "App\\Identity\\Customer\\Application\\Register\\RegisterCustomer",
                             "description": "Registers a new customer in the system.",
                             "input": [
-                                { "name": "email", "type": "Email", "class": "App\\Shared\\Domain\\Model\\Email" },
-                                { "name": "name", "type": "string" },
-                                { "name": "phone", "type": "string|null" }
+                                { "name": "email", "type": "Email", "class": "App\\Shared\\Domain\\Model\\Email", "description": "The customer's email address." },
+                                { "name": "name", "type": "string", "description": "The customer's full name." },
+                                { "name": "phone", "type": "string|null", "description": "The customer's phone number (optional)." }
                             ],
                             "output": { "type": "CustomerId", "class": "App\\Identity\\Customer\\Domain\\Model\\CustomerId" }
                         },
@@ -296,7 +296,7 @@
                             "class": "App\\Identity\\Customer\\Application\\Find\\FindCustomer",
                             "description": "Retrieves a customer by their identifier.",
                             "input": [
-                                { "name": "id", "type": "CustomerId", "class": "App\\Identity\\Customer\\Domain\\Model\\CustomerId" }
+                                { "name": "id", "type": "CustomerId", "class": "App\\Identity\\Customer\\Domain\\Model\\CustomerId", "description": "The unique identifier of the customer." }
                             ],
                             "output": { "type": "Customer", "class": "App\\Identity\\Customer\\Domain\\Model\\Customer" }
                         },
@@ -709,10 +709,10 @@
                             "class": "App\\Order\\Order\\Application\\Place\\PlaceOrder",
                             "description": "Places a new order from a shopping cart.",
                             "input": [
-                                { "name": "customerId", "type": "CustomerId", "class": "App\\Identity\\Customer\\Domain\\Model\\CustomerId" },
-                                { "name": "items", "type": "array" },
-                                { "name": "shippingAddress", "type": "Address", "class": "App\\Shared\\Domain\\Model\\Address" },
-                                { "name": "billingAddress", "type": "Address|null", "class": "App\\Shared\\Domain\\Model\\Address" }
+                                { "name": "customerId", "type": "CustomerId", "class": "App\\Identity\\Customer\\Domain\\Model\\CustomerId", "description": "The customer placing the order." },
+                                { "name": "items", "type": "array", "description": "The list of items to order." },
+                                { "name": "shippingAddress", "type": "Address", "class": "App\\Shared\\Domain\\Model\\Address", "description": "The shipping address." },
+                                { "name": "billingAddress", "type": "Address|null", "class": "App\\Shared\\Domain\\Model\\Address", "description": "The billing address (defaults to shipping if null)." }
                             ],
                             "output": { "type": "OrderId", "class": "App\\Order\\Order\\Domain\\Model\\OrderId" }
                         },
