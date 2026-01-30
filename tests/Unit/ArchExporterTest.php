@@ -14,7 +14,6 @@ use OpenSolid\ArchViewer\Model\ArchOutput;
 use OpenSolid\ArchViewer\Model\CommandOutput;
 use OpenSolid\ArchViewer\Model\ContextOutput;
 use OpenSolid\ArchViewer\Model\DomainEventOutput;
-use OpenSolid\ArchViewer\Model\EventPropertyOutput;
 use OpenSolid\ArchViewer\Model\EventSubscriberOutput;
 use OpenSolid\ArchViewer\Model\ExternalCallOutput;
 use OpenSolid\ArchViewer\Model\MetaOutput;
@@ -196,16 +195,19 @@ final class ArchExporterTest extends TestCase
                     name: 'customerId',
                     type: 'InvoiceCustomerId',
                     class: 'App\\Billing\\Invoice\\Domain\\Model\\InvoiceCustomerId',
+                    description: 'The customer who will own the invoice.',
                 ),
                 new ParameterOutput(
                     name: 'amount',
                     type: 'int',
                     class: 'int',
+                    description: 'The invoice amount in cents.',
                 ),
                 new ParameterOutput(
                     name: 'currency',
                     type: 'string',
                     class: 'string',
+                    description: 'The currency code (e.g., USD, EUR).',
                 ),
             ],
             output: new OutputTypeOutput(
@@ -223,6 +225,7 @@ final class ArchExporterTest extends TestCase
                     name: 'id',
                     type: 'InvoiceId',
                     class: 'App\\Billing\\Invoice\\Domain\\Model\\InvoiceId',
+                    description: 'The unique identifier of the invoice.',
                 ),
             ],
             output: new OutputTypeOutput(
@@ -236,17 +239,17 @@ final class ArchExporterTest extends TestCase
             class: 'App\\Billing\\Invoice\\Domain\\Event\\InvoiceCreated',
             description: 'Emitted when a new invoice is created.',
             properties: [
-                new EventPropertyOutput(
+                new ParameterOutput(
                     name: 'invoiceId',
                     type: 'string',
                     description: 'The unique identifier of the invoice.',
                 ),
-                new EventPropertyOutput(
+                new ParameterOutput(
                     name: 'customerId',
                     type: 'string',
                     description: 'The customer who owns the invoice.',
                 ),
-                new EventPropertyOutput(
+                new ParameterOutput(
                     name: 'amount',
                     type: 'float',
                     description: 'The total amount of the invoice.',
@@ -297,6 +300,7 @@ final class ArchExporterTest extends TestCase
                     name: 'id',
                     type: 'CustomerId',
                     class: 'App\\Identity\\Customer\\Domain\\Model\\CustomerId',
+                    description: 'The unique identifier of the customer.',
                 ),
             ],
             output: new OutputTypeOutput(

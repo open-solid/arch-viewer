@@ -15,6 +15,9 @@ use OpenSolid\Core\Application\Query\Message\Query;
  */
 final readonly class FindCustomer extends Query
 {
+    /**
+     * @param CustomerId $id The unique identifier of the customer.
+     */
     public function __construct(
         public CustomerId $id,
     ) {

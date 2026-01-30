@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OpenSolid\ArchViewer\Extractor;
 
 use OpenSolid\ArchViewer\Model\DomainEventOutput;
-use OpenSolid\ArchViewer\Model\EventPropertyOutput;
+use OpenSolid\ArchViewer\Model\ParameterOutput;
 use OpenSolid\ArchViewer\Parser\DocBlockParser;
 use OpenSolid\ArchViewer\Scanner\ClassScanner;
 use OpenSolid\ArchViewer\Scanner\ModuleInfo;
@@ -56,7 +56,7 @@ final readonly class DomainEventExtractor
                 continue;
             }
 
-            $properties[] = $this->createEventPropertyOutput($property);
+            $properties[] = $this->createParameterOutput($property);
         }
 
         return new DomainEventOutput(
@@ -67,7 +67,7 @@ final readonly class DomainEventExtractor
         );
     }
 
-    private function createEventPropertyOutput(\ReflectionProperty $property): EventPropertyOutput
+    private function createParameterOutput(\ReflectionProperty $property): ParameterOutput
     {
         $type = $property->getType();
         $typeName = 'mixed';
@@ -84,7 +84,7 @@ final readonly class DomainEventExtractor
             $typeName = implode('|', $types);
         }
 
-        return new EventPropertyOutput(
+        return new ParameterOutput(
             name: $property->getName(),
             type: $this->getShortTypeName($typeName),
             description: $this->docBlockParser->getPropertyDescription($property),

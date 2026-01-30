@@ -80,6 +80,30 @@ final class DocBlockParserTest extends TestCase
 
         self::assertNull($description);
     }
+
+    #[Test]
+    public function itReturnsParameterDescriptionFromConstructorDocBlock(): void
+    {
+        $class = new \ReflectionClass(ClassWithParamDocBlock::class);
+        $constructor = $class->getConstructor();
+        $parameter = $constructor->getParameters()[0];
+
+        $description = $this->parser->getParameterDescription($parameter);
+
+        self::assertSame('The name of the entity.', $description);
+    }
+
+    #[Test]
+    public function itReturnsNullForParameterWithoutDocBlock(): void
+    {
+        $class = new \ReflectionClass(ClassWithoutDocBlock::class);
+        $constructor = $class->getConstructor();
+        $parameter = $constructor->getParameters()[0];
+
+        $description = $this->parser->getParameterDescription($parameter);
+
+        self::assertNull($description);
+    }
 }
 
 /**
@@ -108,4 +132,24 @@ class ClassWithDocBlock
 
 class ClassWithoutDocBlock
 {
+    public function __construct(
+        public string $name,
+    ) {
+    }
+}
+
+/**
+ * A class with parameter documentation.
+ */
+class ClassWithParamDocBlock
+{
+    /**
+     * @param string $name The name of the entity.
+     * @param int    $age  The age in years.
+     */
+    public function __construct(
+        public string $name,
+        public int $age,
+    ) {
+    }
 }

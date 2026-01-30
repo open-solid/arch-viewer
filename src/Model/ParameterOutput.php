@@ -9,7 +9,8 @@ final readonly class ParameterOutput implements \JsonSerializable
     public function __construct(
         public string $name,
         public string $type,
-        public string $class,
+        public ?string $class = null,
+        public ?string $description = null,
     ) {
     }
 
@@ -23,8 +24,12 @@ final readonly class ParameterOutput implements \JsonSerializable
             'type' => $this->type,
         ];
 
-        if (!ScalarType::is($this->type)) {
+        if (null !== $this->class && !ScalarType::is($this->type)) {
             $data['class'] = $this->class;
+        }
+
+        if (null !== $this->description) {
+            $data['description'] = $this->description;
         }
 
         return $data;

@@ -15,6 +15,11 @@ use OpenSolid\Core\Application\Command\Message\Command;
  */
 final readonly class CreateInvoice extends Command
 {
+    /**
+     * @param InvoiceCustomerId $customerId The customer who will own the invoice.
+     * @param int               $amount     The invoice amount in cents.
+     * @param string            $currency   The currency code (e.g., USD, EUR).
+     */
     public function __construct(
         public InvoiceCustomerId $customerId,
         public int               $amount,

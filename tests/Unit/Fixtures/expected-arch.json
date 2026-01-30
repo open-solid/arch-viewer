@@ -15,15 +15,18 @@
                                 {
                                     "name": "customerId",
                                     "type": "InvoiceCustomerId",
-                                    "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceCustomerId"
+                                    "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceCustomerId",
+                                    "description": "The customer who will own the invoice."
                                 },
                                 {
                                     "name": "amount",
-                                    "type": "int"
+                                    "type": "int",
+                                    "description": "The invoice amount in cents."
                                 },
                                 {
                                     "name": "currency",
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "The currency code (e.g., USD, EUR)."
                                 }
                             ],
                             "output": {
@@ -41,7 +44,8 @@
                                 {
                                     "name": "id",
                                     "type": "InvoiceId",
-                                    "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceId"
+                                    "class": "App\\Billing\\Invoice\\Domain\\Model\\InvoiceId",
+                                    "description": "The unique identifier of the invoice."
                                 }
                             ],
                             "output": {
@@ -112,7 +116,8 @@
                                 {
                                     "name": "id",
                                     "type": "CustomerId",
-                                    "class": "App\\Identity\\Customer\\Domain\\Model\\CustomerId"
+                                    "class": "App\\Identity\\Customer\\Domain\\Model\\CustomerId",
+                                    "description": "The unique identifier of the customer."
                                 }
                             ],
                             "output": {

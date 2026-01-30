@@ -7,7 +7,7 @@ namespace OpenSolid\ArchViewer\Model;
 final readonly class DomainEventOutput implements \JsonSerializable
 {
     /**
-     * @param list<EventPropertyOutput> $properties
+     * @param list<ParameterOutput> $properties
      */
     public function __construct(
         public string $name,

@@ -164,6 +164,10 @@
                 "class": {
                     "type": "string",
                     "description": "The fully qualified class name (FQCN) of the type."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "A description of the parameter."
                 }
             },
             "additionalProperties": false
@@ -205,28 +209,8 @@
                     "type": "array",
                     "description": "Properties carried by the event.",
                     "items": {
-                        "$ref": "#/$defs/eventProperty"
+                        "$ref": "#/$defs/parameter"
                     }
-                }
-            },
-            "additionalProperties": false
-        },
-        "eventProperty": {
-            "type": "object",
-            "description": "A property of a domain event.",
-            "required": ["name", "type"],
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "The property name."
-                },
-                "type": {
-                    "type": "string",
-                    "description": "The property type."
-                },
-                "description": {
-                    "type": "string",
-                    "description": "A description of the property."
                 }
             },
             "additionalProperties": false

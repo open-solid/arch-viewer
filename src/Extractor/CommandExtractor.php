@@ -94,6 +94,7 @@ final readonly class CommandExtractor
             name: $parameter->getName(),
             type: $this->getShortTypeName($typeName),
             class: $className,
+            description: $this->docBlockParser->getParameterDescription($parameter),
         );
     }
 

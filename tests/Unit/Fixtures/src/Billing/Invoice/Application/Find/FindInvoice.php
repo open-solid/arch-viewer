@@ -15,6 +15,9 @@ use OpenSolid\Core\Application\Query\Message\Query;
  */
 final readonly class FindInvoice extends Query
 {
+    /**
+     * @param InvoiceId $id The unique identifier of the invoice.
+     */
     public function __construct(
         public InvoiceId $id,
     ) {

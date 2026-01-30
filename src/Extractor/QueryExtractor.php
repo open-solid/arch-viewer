@@ -94,6 +94,7 @@ final readonly class QueryExtractor
             name: $parameter->getName(),
             type: $this->getShortTypeName($typeName),
             class: $className,
+            description: $this->docBlockParser->getParameterDescription($parameter),
         );
     }
 
